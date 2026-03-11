@@ -1,0 +1,57 @@
+{
+  "name": "opencode-profiles",
+  "version": "0.0.1",
+  "description": "OCP CLI - manage and switch between local global opencode profiles",
+  "author": "0xKahi",
+  "license": "MIT",
+  "module": "index.ts",
+  "type": "module",
+  "keywords": [
+    "opencode",
+    "cli",
+    "extensions",
+    "profiles"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/0xKahi/ocp.git"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "ocp": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "start": "bun run dist/index.js",
+    "build": "bun build src/index.ts --outdir dist --target bun --minify",
+    "prepublishOnly": "bun run build",
+    "release": "changeset publish",
+    "version": "changeset version",
+    "changeset": "changeset",
+    "biome": "biome check ./src",
+    "lint": "bun biome",
+    "lint:fix": "bun biome --write",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@clack/prompts": "^1.0.1",
+    "commander": "^14.0.3",
+    "kleur": "^4.1.5",
+    "ora": "^9.3.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.3.8",
+    "@changesets/cli": "^2.30.0",
+    "@types/bun": "latest",
+    "@types/node": "^20.0.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
