@@ -1,7 +1,7 @@
 import path from 'node:path';
 import z from 'zod';
 import { ConfigOptionsSchema, ConfigSchema } from '../schemas/config.schema';
-import { atomicWrite } from './atomic';
+import { Atomic } from './atomic';
 import { findFile, findOCPConfig, getGlobalOCPConfig } from './get-paths.util';
 
 type Config = z.infer<typeof ConfigSchema>;
@@ -57,7 +57,7 @@ export class ProfileLoader {
 
     config.profiles[profile.name] = { path: profile.path };
 
-    await atomicWrite(getGlobalOCPConfig(), config);
+    await Atomic.write({ filePath: getGlobalOCPConfig(), data: config });
   }
 
   static async removeProfile(name: string) {
@@ -67,7 +67,7 @@ export class ProfileLoader {
     }
 
     delete config.profiles[name];
-    await atomicWrite(getGlobalOCPConfig(), config);
+    await Atomic.write({ filePath: getGlobalOCPConfig(), data: config });
   }
 
   private static async loadConfig(): Promise<Config> {
