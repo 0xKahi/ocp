@@ -8,7 +8,7 @@ export class ListProfileCommandTemplate extends CommandTemplate {
   name = 'list';
 
   setup(cmd: CommandEx) {
-    cmd.description('List all profiles');
+    cmd.alias('ls').description('List all profiles');
   }
 
   setOptions(cmd: CommandEx) {

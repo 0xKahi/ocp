@@ -8,7 +8,7 @@ export class RemoveProfileCommandTemplate extends CommandTemplate {
   name = 'remove';
 
   setup(cmd: CommandEx) {
-    cmd.description('Remove a profile').argument('<name>', 'Profile name');
+    cmd.alias('rm').description('Remove a profile').argument('<name>', 'Profile name');
   }
 
   setOptions(cmd: CommandEx) {
