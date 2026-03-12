@@ -1,9 +1,9 @@
 import path from 'node:path';
 import type { CommandEx } from '../../schemas/command-ex';
 import { CommandTemplate } from '../../schemas/command-template';
+import { highlighter } from '../../utils/highlighter';
 import { logger } from '../../utils/logger';
 import { ProfileLoader } from '../../utils/profile-loader';
-import { highlighter } from '../../utils/highlighter';
 
 type AddProfileOptions = {
   cwd?: boolean;
