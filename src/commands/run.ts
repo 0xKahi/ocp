@@ -8,7 +8,7 @@ export class RunCommandTemplate extends CommandTemplate {
   name = 'run';
 
   setup(cmd: CommandEx) {
-    cmd.description('Run opencode with a profile').argument('<profile>', 'Profile name');
+    cmd.alias('r').description('Run opencode with a profile').argument('<profile>', 'Profile name');
   }
 
   setOptions(cmd: CommandEx) {
