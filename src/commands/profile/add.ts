@@ -3,6 +3,7 @@ import type { CommandEx } from '../../schemas/command-ex';
 import { CommandTemplate } from '../../schemas/command-template';
 import { logger } from '../../utils/logger';
 import { ProfileLoader } from '../../utils/profile-loader';
+import { highlighter } from '../../utils/highlighter';
 
 type AddProfileOptions = {
   cwd?: boolean;
@@ -34,7 +35,7 @@ export class AddProfileCommandTemplate extends CommandTemplate {
         const profilePath = options.cwd ? process.cwd() : path.resolve(options.path!);
 
         await ProfileLoader.addProfile({ name, path: profilePath });
-        logger.success(`Profile "${name}" added at ${profilePath}`);
+        logger.success('Profile', highlighter.profile(name), 'added at ', highlighter.path(profilePath));
       } catch (error: any) {
         logger.error(error?.message || 'An error occurred while adding the profile');
         process.exit(1);

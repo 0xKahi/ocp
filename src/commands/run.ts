@@ -21,7 +21,7 @@ export class RunCommandTemplate extends CommandTemplate {
       try {
         const result = await ProfileLoader.getProfileAndOptions(profileName);
         if (!result) {
-          throw new Error(`Profile "${profileName}" not found.`);
+          throw new Error(`Profile "${highlighter.profile(profileName)}" not found.`);
         }
 
         if (!ProfileLoader.isProfileValid(result)) {

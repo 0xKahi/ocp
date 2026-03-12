@@ -1,5 +1,6 @@
 import type { CommandEx } from '../../schemas/command-ex';
 import { CommandTemplate } from '../../schemas/command-template';
+import { highlighter } from '../../utils/highlighter';
 import { logger } from '../../utils/logger';
 import { ProfileLoader } from '../../utils/profile-loader';
 
@@ -26,9 +27,9 @@ export class ListProfileCommandTemplate extends CommandTemplate {
 
         console.table(
           profiles.map(({ name, path, isValid }) => ({
-            Name: name,
-            Path: path,
-            Valid: isValid ? '✓' : '✗',
+            Name: highlighter.profile(name),
+            Path: highlighter.path(path),
+            Valid: isValid ? highlighter.success('✓') : highlighter.error('✗'),
           })),
         );
       } catch (error: any) {
