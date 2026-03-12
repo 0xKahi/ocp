@@ -1,5 +1,11 @@
 # opencode-profiles
 
+## 1.1.0
+
+### Minor Changes
+
+- 0eca585: added update command
+
 ## 1.0.1
 
 ### Patch Changes
