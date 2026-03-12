@@ -1,5 +1,11 @@
 # opencode-profiles
 
+## 1.1.1
+
+### Patch Changes
+
+- 755ddde: added alias to profile commands
+
 ## 1.1.0
 
 ### Minor Changes
