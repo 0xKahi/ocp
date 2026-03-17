@@ -28,6 +28,7 @@
   "scripts": {
     "dev": "bun run src/index.ts",
     "start": "bun run dist/index.js",
+    "prod": "bun run start",
     "build": "bun build src/index.ts --outdir dist --target bun --minify",
     "prepublishOnly": "bun run build",
     "release": "changeset publish",

@@ -2,7 +2,7 @@ import path from 'node:path';
 import z from 'zod';
 import { ConfigOptionsSchema, ConfigSchema } from '../schemas/config.schema';
 import { Atomic } from './atomic';
-import { findFile, findOCPConfig, getGlobalOCPConfig } from './get-paths.util';
+import { PathUtil } from './path.util';
 
 type Config = z.infer<typeof ConfigSchema>;
 type Options = z.infer<typeof ConfigOptionsSchema>;
@@ -17,7 +17,7 @@ export class ProfileLoader {
     const config = await this.loadConfig();
     return Object.entries(config.profiles).map(([name, profile]) => ({
       name,
-      path: profile.path,
+      path: PathUtil.expandPath(profile.path),
     }));
   }
 
@@ -35,7 +35,7 @@ export class ProfileLoader {
     if (!profile) {
       return undefined;
     }
-    return { name, path: profile.path, opts: rest };
+    return { name, path: PathUtil.expandPath(profile.path), opts: rest };
   }
 
   static isProfileValid(profile: Profile): boolean {
@@ -57,7 +57,7 @@ export class ProfileLoader {
 
     config.profiles[profile.name] = { path: profile.path };
 
-    await Atomic.write({ filePath: getGlobalOCPConfig(), data: config });
+    await Atomic.write({ filePath: PathUtil.globalOCPConfig, data: config });
   }
 
   static async removeProfile(name: string) {
@@ -67,11 +67,11 @@ export class ProfileLoader {
     }
 
     delete config.profiles[name];
-    await Atomic.write({ filePath: getGlobalOCPConfig(), data: config });
+    await Atomic.write({ filePath: PathUtil.globalOCPConfig, data: config });
   }
 
   private static async loadConfig(): Promise<Config> {
-    const config = findOCPConfig();
+    const config = PathUtil.findOCPConfig();
     if (!config.exists) {
       throw new Error('OCP config file not found. Please run "ocp init" to initialize OCP.');
     }
@@ -80,15 +80,17 @@ export class ProfileLoader {
   }
 
   private static validateProfilePath(profilePath: string) {
-    if (findFile(profilePath).exists === false) {
-      throw new Error(`Profile path does not exist: ${profilePath}`);
+    const resolved = PathUtil.expandPath(profilePath);
+
+    if (PathUtil.findFile(resolved).exists === false) {
+      throw new Error(`Profile path does not exist: ${resolved}`);
     }
 
-    const opencodeConfig = findFile(path.join(profilePath, 'opencode.jsonc'));
-    const opencodeConfig2 = findFile(path.join(profilePath, 'opencode.json'));
+    const opencodeConfig = PathUtil.findFile(path.join(resolved, 'opencode.jsonc'));
+    const opencodeConfig2 = PathUtil.findFile(path.join(resolved, 'opencode.json'));
 
     if (!opencodeConfig.exists && !opencodeConfig2.exists) {
-      throw new Error(`Profile path does not contain a valid opencode configuration file: ${profilePath}`);
+      throw new Error(`Profile path does not contain a valid opencode configuration file: ${resolved}`);
     }
   }
 }

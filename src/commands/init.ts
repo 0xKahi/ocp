@@ -1,9 +1,9 @@
 import ora from 'ora';
 import type { CommandEx } from '../schemas/command-ex';
 import { CommandTemplate } from '../schemas/command-template';
-import { findFile, findOCPConfig, getGlobalOpencodeConfig } from '../utils/get-paths.util';
 import { highlighter } from '../utils/highlighter';
 import { logger } from '../utils/logger';
+import { PathUtil } from '../utils/path.util';
 
 export class InitCommandTemplate extends CommandTemplate {
   name = 'init';
@@ -21,7 +21,7 @@ export class InitCommandTemplate extends CommandTemplate {
   }
 
   async run() {
-    const opencodeDir = findFile(getGlobalOpencodeConfig());
+    const opencodeDir = PathUtil.findFile(PathUtil.globalOpencodeConfig);
 
     if (opencodeDir.exists === false) {
       logger.error(`Opencode global directory not found at: ${highlighter.path(opencodeDir.path)}`);
@@ -29,7 +29,7 @@ export class InitCommandTemplate extends CommandTemplate {
       process.exit(1);
     }
 
-    const ocpConfig = findOCPConfig();
+    const ocpConfig = PathUtil.findOCPConfig();
 
     if (ocpConfig.exists) {
       logger.error('OCP has already been initialized.');
