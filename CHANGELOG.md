@@ -1,5 +1,15 @@
 # opencode-profiles
 
+## 1.2.0
+
+### Minor Changes
+
+- 5b6d8bb: added shell var expansion etc $HOME, $USER to profile paths
+
+### Patch Changes
+
+- 5b6d8bb: refactored path util into utility class
+
 ## 1.1.1
 
 ### Patch Changes

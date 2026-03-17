@@ -1,6 +1,6 @@
 {
   "name": "opencode-profiles",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "OCP CLI - manage and switch between local global opencode profiles",
   "author": "0xKahi",
   "license": "MIT",
