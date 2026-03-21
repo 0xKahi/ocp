@@ -5,37 +5,26 @@ import { logger } from '../../utils/logger';
 import { ProfileLoader } from '../../utils/profile-loader';
 
 export class ListProfileCommandTemplate extends CommandTemplate {
-  name = 'list';
+  override readonly name = 'list';
+  override readonly description = 'List all profiles';
+  override readonly alias = 'ls';
 
-  setup(cmd: CommandEx) {
-    cmd.alias('ls').description('List all profiles');
-  }
+  override setOptions(_cmd: CommandEx): void {}
 
-  setOptions(cmd: CommandEx) {
-    return cmd;
-  }
+  override async execute(): Promise<void> {
+    const profiles = await ProfileLoader.getAllProfilesWithValidity();
 
-  setAction(cmd: CommandEx) {
-    cmd.action(async () => {
-      try {
-        const profiles = await ProfileLoader.getAllProfilesWithValidity();
+    if (profiles.length === 0) {
+      logger.message('No profiles found.');
+      return;
+    }
 
-        if (profiles.length === 0) {
-          logger.message('No profiles found.');
-          return;
-        }
-
-        console.table(
-          profiles.map(({ name, path, isValid }) => ({
-            Name: highlighter.profile(name),
-            Path: highlighter.path(path),
-            Valid: isValid ? highlighter.success('✓') : highlighter.error('✗'),
-          })),
-        );
-      } catch (error: any) {
-        logger.error(error?.message || 'An error occurred while listing profiles');
-        process.exit(1);
-      }
-    });
+    console.table(
+      profiles.map(({ name, path, isValid }) => ({
+        Name: highlighter.profile(name),
+        Path: highlighter.path(path),
+        Valid: isValid ? highlighter.success('✓') : highlighter.error('✗'),
+      })),
+    );
   }
 }

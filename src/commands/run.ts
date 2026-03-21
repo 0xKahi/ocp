@@ -5,79 +5,76 @@ import { logger } from '../utils/logger';
 import { ProfileLoader } from '../utils/profile-loader';
 
 export class RunCommandTemplate extends CommandTemplate {
-  name = 'run';
+  override readonly name = 'run';
+  override readonly description = 'Run opencode with a profile';
+  override readonly alias = 'r';
 
-  setup(cmd: CommandEx) {
-    cmd.alias('r').description('Run opencode with a profile').argument('<profile>', 'Profile name');
+  override setArguments(cmd: CommandEx): void {
+    cmd.argument('<profile>', 'Profile name');
   }
 
-  setOptions(cmd: CommandEx) {
-    return cmd;
-  }
+  override setOptions(_cmd: CommandEx): void {}
 
-  setAction(cmd: CommandEx) {
+  override globalSettings(cmd: CommandEx): void {
+    super.globalSettings(cmd);
     cmd.allowUnknownOption(true);
-    cmd.action(async (profileName: string, _options: unknown, command: CommandEx) => {
-      try {
-        const result = await ProfileLoader.getProfileAndOptions(profileName);
-        if (!result) {
-          throw new Error(`Profile "${highlighter.profile(profileName)}" not found.`);
-        }
+  }
 
-        if (!ProfileLoader.isProfileValid(result)) {
-          throw new Error(`Profile "${profileName}" is invalid.`);
-        }
+  override async execute(profileName: string, _options: unknown, command: CommandEx): Promise<void> {
+    const result = await ProfileLoader.getProfileAndOptions(profileName);
+    if (!result) {
+      throw new Error(`Profile "${highlighter.profile(profileName)}" not found.`);
+    }
 
-        const { path: profilePath, opts } = result;
-        const extraArgs = command.args.slice(1);
+    if (!ProfileLoader.isProfileValid(result)) {
+      throw new Error(`Profile "${profileName}" is invalid.`);
+    }
 
-        if (opts.randomPort) {
-          const port = Math.floor(Math.random() * 60905) + 4096;
-          extraArgs.push('--port', String(port));
-        }
+    const { path: profilePath, opts } = result;
+    const extraArgs = command.args.slice(1);
 
-        logger.info('starting profile:', highlighter.profile(profileName));
+    if (opts.randomPort) {
+      const port = Math.floor(Math.random() * 60905) + 4096;
+      extraArgs.push('--port', String(port));
+    }
 
-        let proc: ReturnType<typeof Bun.spawn> | null = null;
-        let preSpawnSignalExitCode: number | null = null;
+    logger.info('starting profile:', highlighter.profile(profileName));
 
-        const sigintHandler = () => {
-          if (proc) proc.kill('SIGINT');
-          else preSpawnSignalExitCode = 130;
-        };
+    let proc: ReturnType<typeof Bun.spawn> | null = null;
+    let preSpawnSignalExitCode: number | null = null;
 
-        const sigtermHandler = () => {
-          if (proc) proc.kill('SIGTERM');
-          else preSpawnSignalExitCode = 143;
-        };
+    const sigintHandler = () => {
+      if (proc) proc.kill('SIGINT');
+      else preSpawnSignalExitCode = 130;
+    };
 
-        process.on('SIGINT', sigintHandler);
-        process.on('SIGTERM', sigtermHandler);
+    const sigtermHandler = () => {
+      if (proc) proc.kill('SIGTERM');
+      else preSpawnSignalExitCode = 143;
+    };
 
-        try {
-          if (preSpawnSignalExitCode !== null) {
-            process.exit(preSpawnSignalExitCode);
-          }
+    process.on('SIGINT', sigintHandler);
+    process.on('SIGTERM', sigtermHandler);
 
-          proc = Bun.spawn({
-            cmd: ['opencode', ...extraArgs],
-            env: { ...process.env, OPENCODE_CONFIG_DIR: profilePath },
-            stdin: 'inherit',
-            stdout: 'inherit',
-            stderr: 'inherit',
-          });
-
-          const exitCode = await proc.exited;
-          logger.info('closing profile:', highlighter.profile(profileName));
-          process.exit(exitCode);
-        } finally {
-          process.off('SIGINT', sigintHandler);
-          process.off('SIGTERM', sigtermHandler);
-        }
-      } catch (error: any) {
-        logger.error(error?.message || 'An error occurred while running the profile');
-        process.exit(1);
+    try {
+      if (preSpawnSignalExitCode !== null) {
+        process.exit(preSpawnSignalExitCode);
       }
-    });
+
+      proc = Bun.spawn({
+        cmd: ['opencode', ...extraArgs],
+        env: { ...process.env, OPENCODE_CONFIG_DIR: profilePath },
+        stdin: 'inherit',
+        stdout: 'inherit',
+        stderr: 'inherit',
+      });
+
+      const exitCode = await proc.exited;
+      logger.info('closing profile:', highlighter.profile(profileName));
+      process.exit(exitCode);
+    } finally {
+      process.off('SIGINT', sigintHandler);
+      process.off('SIGTERM', sigtermHandler);
+    }
   }
 }
