@@ -5,17 +5,13 @@ import { ListProfileCommandTemplate } from './list';
 import { RemoveProfileCommandTemplate } from './remove';
 
 export class ProfileCommandTemplate extends CommandTemplate {
-  name = 'profile';
+  override readonly name = 'profile';
+  override readonly description = 'Manage Profiles';
+  override readonly alias = 'p';
 
-  setup(cmd: CommandEx) {
-    cmd.alias('p').description('Manage Profiles');
-  }
+  override setOptions(_cmd: CommandEx): void {}
 
-  setOptions(cmd: CommandEx) {
-    return cmd;
-  }
-
-  setAction(cmd: CommandEx) {
-    cmd.register(new AddProfileCommandTemplate()).register(new RemoveProfileCommandTemplate()).register(new ListProfileCommandTemplate());
+  override subCommands(): CommandTemplate[] {
+    return [new AddProfileCommandTemplate(), new RemoveProfileCommandTemplate(), new ListProfileCommandTemplate()];
   }
 }

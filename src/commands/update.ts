@@ -37,30 +37,20 @@ const PACKAGE_MANAGERS: PackageManagerInfo[] = [
 ];
 
 export class UpdateCommandTemplate extends CommandTemplate {
-  name = 'update';
+  override readonly name = 'update';
+  override readonly description = 'Update the OCP CLI to the latest version';
 
-  setup(cmd: CommandEx) {
-    return cmd.description('Update the OCP CLI to the latest version');
+  override setOptions(cmd: CommandEx): void {
+    cmd.option('-f, --force <manager>', 'Force specific package manager (bun|npm|pnpm|yarn)');
   }
 
-  setOptions(cmd: CommandEx) {
-    return cmd.option('-f, --force <manager>', 'Force specific package manager (bun|npm|pnpm|yarn)');
+  protected override handleError(error: unknown): never {
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error(`Update failed: ${message}`);
+    process.exit(1);
   }
 
-  setAction(cmd: CommandEx) {
-    cmd.action(async (options: { force?: string }) => {
-      try {
-        await this.run(options);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        logger.error(`Update failed: ${message}`);
-        process.exit(1);
-      }
-    });
-  }
-
-  async run(options: { force?: string }): Promise<void> {
-    // Validate forced package manager if provided
+  override async execute(options: { force?: string }): Promise<void> {
     if (options.force) {
       const validManagers = ['bun', 'npm', 'pnpm', 'yarn'];
       if (!validManagers.includes(options.force)) {
@@ -70,7 +60,6 @@ export class UpdateCommandTemplate extends CommandTemplate {
       }
     }
 
-    // Detect package manager
     const spinner = ora('Detecting package manager...').start();
     const packageManager = await this.detectPackageManager(options.force as PackageManager | undefined);
 
@@ -87,7 +76,6 @@ export class UpdateCommandTemplate extends CommandTemplate {
 
     spinner.succeed(`Detected package manager: ${highlighter.success(packageManager.name)}`);
 
-    // Verify the package manager is available
     const verifySpinner = ora(`Verifying ${packageManager.name} availability...`).start();
     const isAvailable = await this.isCommandAvailable(packageManager.command);
 
@@ -99,11 +87,9 @@ export class UpdateCommandTemplate extends CommandTemplate {
     }
     verifySpinner.succeed(`${packageManager.name} is available`);
 
-    // Get current version
     const { version: currentVersion } = await import('../../package.json');
     logger.info(`Current version: ${highlighter.path(currentVersion)}`);
 
-    // Run the update
     const updateSpinner = ora(`Updating OCP via ${packageManager.name}...`).start();
 
     try {
@@ -117,7 +103,6 @@ export class UpdateCommandTemplate extends CommandTemplate {
       throw error;
     }
 
-    // Verify new version
     const { version: newVersion } = await import('../../package.json');
 
     if (newVersion !== currentVersion) {
@@ -130,21 +115,11 @@ export class UpdateCommandTemplate extends CommandTemplate {
     logger.info(`Run ${highlighter.command('ocp --version')} to verify the update.`);
   }
 
-  /**
-   * Detect which package manager was used to install the CLI.
-   * Priority:
-   * 1. User-specified force option
-   * 2. npm_config_user_agent environment variable
-   * 3. Which runtime is executing (bun vs node)
-   * 4. Check for global installations
-   */
   private async detectPackageManager(force?: PackageManager): Promise<PackageManagerInfo | null> {
-    // If force is specified, use that
     if (force) {
       return PACKAGE_MANAGERS.find(pm => pm.name === force) || null;
     }
 
-    // Check npm_config_user_agent (set by npm/yarn/pnpm when running)
     const userAgent = process.env.npm_config_user_agent || '';
 
     if (userAgent.includes('bun')) {
@@ -160,18 +135,15 @@ export class UpdateCommandTemplate extends CommandTemplate {
       return PACKAGE_MANAGERS.find(pm => pm.name === 'npm') || null;
     }
 
-    // Check which runtime is executing the script
     const execPath = process.execPath || '';
     if (execPath.includes('bun')) {
       return PACKAGE_MANAGERS.find(pm => pm.name === 'bun') || null;
     }
 
-    // Check argv[0] for bun specifically
     if (process.argv[0]?.includes('bun')) {
       return PACKAGE_MANAGERS.find(pm => pm.name === 'bun') || null;
     }
 
-    // Try to detect by checking which package managers are available and have OCP installed
     for (const pm of PACKAGE_MANAGERS) {
       const hasOCP = await this.checkGlobalInstallation(pm.name);
       if (hasOCP) {
@@ -179,13 +151,11 @@ export class UpdateCommandTemplate extends CommandTemplate {
       }
     }
 
-    // Default to bun if available (since this is a Bun project)
     const bunAvailable = await this.isCommandAvailable('bun');
     if (bunAvailable) {
       return PACKAGE_MANAGERS.find(pm => pm.name === 'bun') || null;
     }
 
-    // Default to npm as last resort
     const npmAvailable = await this.isCommandAvailable('npm');
     if (npmAvailable) {
       return PACKAGE_MANAGERS.find(pm => pm.name === 'npm') || null;
@@ -194,9 +164,6 @@ export class UpdateCommandTemplate extends CommandTemplate {
     return null;
   }
 
-  /**
-   * Check if OCP is installed globally via a specific package manager
-   */
   private async checkGlobalInstallation(manager: PackageManager): Promise<boolean> {
     try {
       let listCommand: string;
@@ -225,11 +192,7 @@ export class UpdateCommandTemplate extends CommandTemplate {
     }
   }
 
-  /**
-   * Check if a command is available in PATH
-   */
   private async isCommandAvailable(command: string): Promise<boolean> {
-    // First check if we can access it
     try {
       execSync(`${command} --version`, { stdio: 'pipe' });
       return true;

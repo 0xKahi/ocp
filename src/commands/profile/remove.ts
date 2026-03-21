@@ -5,25 +5,18 @@ import { logger } from '../../utils/logger';
 import { ProfileLoader } from '../../utils/profile-loader';
 
 export class RemoveProfileCommandTemplate extends CommandTemplate {
-  name = 'remove';
+  override readonly name = 'remove';
+  override readonly description = 'Remove a profile';
+  override readonly alias = 'rm';
 
-  setup(cmd: CommandEx) {
-    cmd.alias('rm').description('Remove a profile').argument('<name>', 'Profile name');
+  override setArguments(cmd: CommandEx): void {
+    cmd.argument('<name>', 'Profile name');
   }
 
-  setOptions(cmd: CommandEx) {
-    return cmd;
-  }
+  override setOptions(_cmd: CommandEx): void {}
 
-  setAction(cmd: CommandEx) {
-    cmd.action(async (name: string) => {
-      try {
-        await ProfileLoader.removeProfile(name);
-        logger.success('Profile', highlighter.profile(name), 'has been removed successfully.');
-      } catch (error: any) {
-        logger.error(error?.message || 'An error occurred while removing the profile');
-        process.exit(1);
-      }
-    });
+  override async execute(name: string): Promise<void> {
+    await ProfileLoader.removeProfile(name);
+    logger.success('Profile', highlighter.profile(name), 'has been removed successfully.');
   }
 }

@@ -11,35 +11,38 @@ type AddProfileOptions = {
 };
 
 export class AddProfileCommandTemplate extends CommandTemplate {
-  name = 'add';
+  override readonly name = 'add';
+  override readonly description = 'Add a new profile';
 
-  setup(cmd: CommandEx) {
-    cmd.description('Add a new profile').argument('<name>', 'Profile name');
+  override setArguments(cmd: CommandEx): void {
+    cmd.argument('<name>', 'Profile name');
   }
 
-  setOptions(cmd: CommandEx) {
+  override setOptions(cmd: CommandEx): void {
     cmd.option('--cwd', 'Use current working directory as profile path').option('--path <path>', 'Path to the profile directory');
   }
 
-  setAction(cmd: CommandEx) {
-    cmd.action(async (name: string, options: AddProfileOptions) => {
-      try {
-        if (!options.cwd && !options.path) {
-          throw new Error('Either --cwd or --path <path> must be provided.');
-        }
+  override async execute(name: string, options: AddProfileOptions): Promise<void> {
+    if (!options.cwd && !options.path) {
+      throw new Error('Either --cwd or --path <path> must be provided.');
+    }
 
-        if (options.cwd && options.path) {
-          throw new Error('--cwd and --path are mutually exclusive.');
-        }
+    if (options.cwd && options.path) {
+      throw new Error('--cwd and --path are mutually exclusive.');
+    }
 
-        const profilePath = options.cwd ? process.cwd() : path.resolve(options.path!);
-
-        await ProfileLoader.addProfile({ name, path: profilePath });
-        logger.success('Profile', highlighter.profile(name), 'added at ', highlighter.path(profilePath));
-      } catch (error: any) {
-        logger.error(error?.message || 'An error occurred while adding the profile');
-        process.exit(1);
+    let profilePath: string;
+    if (options.cwd) {
+      profilePath = process.cwd();
+    } else {
+      const pathOption = options.path;
+      if (!pathOption) {
+        throw new Error('Path option is required when --cwd is not set.');
       }
-    });
+      profilePath = path.resolve(pathOption);
+    }
+
+    await ProfileLoader.addProfile({ name, path: profilePath });
+    logger.success('Profile', highlighter.profile(name), 'added at ', highlighter.path(profilePath));
   }
 }

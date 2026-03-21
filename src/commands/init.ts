@@ -1,26 +1,14 @@
 import ora from 'ora';
-import type { CommandEx } from '../schemas/command-ex';
 import { CommandTemplate } from '../schemas/command-template';
 import { highlighter } from '../utils/highlighter';
 import { logger } from '../utils/logger';
 import { PathUtil } from '../utils/path.util';
 
 export class InitCommandTemplate extends CommandTemplate {
-  name = 'init';
+  override readonly name = 'init';
+  override readonly description = 'Initialize OCP';
 
-  setup(cmd: CommandEx) {
-    return cmd.description('Initialize OCP');
-  }
-
-  setOptions(cmd: CommandEx) {
-    return cmd;
-  }
-
-  setAction(cmd: CommandEx) {
-    cmd.action(this.run);
-  }
-
-  async run() {
+  override async execute(): Promise<void> {
     const opencodeDir = PathUtil.findFile(PathUtil.globalOpencodeConfig);
 
     if (opencodeDir.exists === false) {
