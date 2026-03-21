@@ -1,5 +1,12 @@
 # opencode-profiles
 
+## 1.3.0
+
+### Minor Changes
+
+- 6e190ed: - refactored code templating
+  - added cli global style settings
+
 ## 1.2.0
 
 ### Minor Changes
