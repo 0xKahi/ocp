@@ -4,6 +4,10 @@ import { highlighter } from '../utils/highlighter';
 import { logger } from '../utils/logger';
 import { ProfileLoader } from '../utils/profile-loader';
 
+type RunCommandOptions = {
+  cmd?: boolean;
+};
+
 export class RunCommandTemplate extends CommandTemplate {
   override readonly name = 'run';
   override readonly description = 'Run opencode with a profile';
@@ -13,14 +17,17 @@ export class RunCommandTemplate extends CommandTemplate {
     cmd.argument('<profile>', 'Profile name');
   }
 
-  override setOptions(_cmd: CommandEx): void {}
+  override setOptions(cmd: CommandEx): void {
+    cmd.option('--cmd', 'Run forwarded arguments as an opencode subcommand');
+  }
 
   override globalSettings(cmd: CommandEx): void {
     super.globalSettings(cmd);
+    cmd.allowExcessArguments(true);
     cmd.allowUnknownOption(true);
   }
 
-  override async execute(profileName: string, _options: unknown, command: CommandEx): Promise<void> {
+  override async execute(profileName: string, options: RunCommandOptions, command: CommandEx): Promise<void> {
     const result = await ProfileLoader.getProfileAndOptions(profileName);
     if (!result) {
       throw new Error(`Profile "${highlighter.profile(profileName)}" not found.`);
@@ -32,8 +39,17 @@ export class RunCommandTemplate extends CommandTemplate {
 
     const { path: profilePath, opts } = result;
     const extraArgs = command.args.slice(1);
+    const isCommandMode = options.cmd === true;
 
-    if (opts.randomPort) {
+    if (isCommandMode && extraArgs.length === 0) {
+      throw new Error('Please provide an opencode command after --cmd.');
+    }
+
+    if (isCommandMode && extraArgs.some(arg => arg === '--port' || arg.startsWith('--port='))) {
+      throw new Error('--port cannot be used together with --cmd.');
+    }
+
+    if (opts.randomPort && !isCommandMode) {
       const port = Math.floor(Math.random() * 60905) + 4096;
       extraArgs.push('--port', String(port));
     }
