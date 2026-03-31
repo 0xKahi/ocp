@@ -1,5 +1,11 @@
 # opencode-profiles
 
+## 1.3.1
+
+### Patch Changes
+
+- dbba755: added cmd option to run command
+
 ## 1.3.0
 
 ### Minor Changes
