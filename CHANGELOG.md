@@ -1,5 +1,14 @@
 # opencode-profiles
 
+## 1.4.0
+
+### Minor Changes
+
+- 12035bf: - improve ui with @clack/prompts
+  - remove ora spinner
+  - refactored commands to use prompts
+  - change `update` command to `upgrade`
+
 ## 1.3.1
 
 ### Patch Changes
