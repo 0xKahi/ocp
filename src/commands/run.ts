@@ -1,11 +1,13 @@
+import { box, cancel, isCancel, note, select, spinner, text } from '@clack/prompts';
 import type { CommandEx } from '../schemas/command-ex';
 import { CommandTemplate } from '../schemas/command-template';
+import { loadOcpConfig } from '../utils/config-loader.util';
 import { highlighter } from '../utils/highlighter';
-import { logger } from '../utils/logger';
-import { ProfileLoader } from '../utils/profile-loader';
+import { type Profile, ProfileLoader } from '../utils/profile-loader';
+import { successOutro } from '../utils/prompt.util';
 
 type RunCommandOptions = {
-  cmd?: boolean;
+  cmd?: string | boolean;
 };
 
 export class RunCommandTemplate extends CommandTemplate {
@@ -14,47 +16,111 @@ export class RunCommandTemplate extends CommandTemplate {
   override readonly alias = 'r';
 
   override setArguments(cmd: CommandEx): void {
-    cmd.argument('<profile>', 'Profile name');
+    cmd.argument('[profile]', 'optional Profile name');
   }
 
   override setOptions(cmd: CommandEx): void {
-    cmd.option('--cmd', 'Run forwarded arguments as an opencode subcommand');
+    cmd.option('--cmd [VALUE]', 'Run forwarded arguments as an opencode subcommand');
   }
 
-  override globalSettings(cmd: CommandEx): void {
-    super.globalSettings(cmd);
-    cmd.allowExcessArguments(true);
-    cmd.allowUnknownOption(true);
-  }
+  override async execute(profileName: string | undefined, options: RunCommandOptions): Promise<void> {
+    const spin = spinner();
 
-  override async execute(profileName: string, options: RunCommandOptions, command: CommandEx): Promise<void> {
-    const result = await ProfileLoader.getProfileAndOptions(profileName);
-    if (!result) {
-      throw new Error(`Profile "${highlighter.profile(profileName)}" not found.`);
+    spin.start('Loading profiles');
+
+    const config = await loadOcpConfig();
+    const profiles = ProfileLoader.parseProfilesFromConfig(config);
+    let selectedProfile: Profile | undefined = undefined;
+
+    if (profiles.length === 0) {
+      spin.stop('Found config');
+      cancel('No profiles found. Please add a profile first.');
+      process.exit(1);
     }
 
-    if (!ProfileLoader.isProfileValid(result)) {
-      throw new Error(`Profile "${profileName}" is invalid.`);
+    if (profiles.filter(p => p.isValid).length === 0) {
+      spin.stop('Found profiles');
+      box(`${highlighter.green('ocp')} profile ls`, `${highlighter.component('hint:')} check profiles with`, {
+        contentAlign: 'center',
+        titleAlign: 'center',
+        width: 'auto',
+        rounded: true,
+      });
+      cancel('No valid profiles found. Please fix your profiles first.');
+      process.exit(1);
     }
 
-    const { path: profilePath, opts } = result;
-    const extraArgs = command.args.slice(1);
-    const isCommandMode = options.cmd === true;
-
-    if (isCommandMode && extraArgs.length === 0) {
-      throw new Error('Please provide an opencode command after --cmd.');
+    if (profileName) {
+      selectedProfile = profiles.find(p => p.name === profileName);
+      if (!selectedProfile) {
+        spin.error(`Profile "${highlighter.profile(profileName)}" does not exist`);
+      } else {
+        if (!selectedProfile.isValid) {
+          spin.error(`Profile "${highlighter.profile(profileName)}" has invalid config`);
+          note(highlighter.path(selectedProfile.path), 'profile path');
+          selectedProfile = undefined;
+        } else {
+          spin.stop(`Found profile ${highlighter.profile(profileName)}`);
+        }
+      }
+    } else {
+      spin.stop('Found profiles');
     }
 
-    if (isCommandMode && extraArgs.some(arg => arg === '--port' || arg.startsWith('--port='))) {
-      throw new Error('--port cannot be used together with --cmd.');
+    if (!selectedProfile) {
+      const selectedName = await select({
+        message: 'Select a profile to run',
+        options: profiles.map(p => {
+          return {
+            value: p.name,
+            ...(!p.isValid ? { hint: 'Invalid config', disabled: true } : {}),
+          };
+        }),
+      });
+
+      if (isCancel(selectedName)) {
+        cancel('Operation cancelled.');
+        process.exit(0);
+      }
+
+      selectedProfile = profiles.find(p => p.name === selectedName);
     }
 
-    if (opts.randomPort && !isCommandMode) {
+    if (!selectedProfile) {
+      cancel('No valid profile selected. Operation cancelled.');
+      process.exit(0);
+    }
+
+    const extraArgs: string[] = [];
+    if (options?.cmd === true) {
+      const cmdArgs = await text({
+        message: `Enter the command to be passed to ${highlighter.green('opencode')} ${highlighter.command('<command>')}`,
+        placeholder: 'e.g. --port 3000',
+        validate: value => {
+          if (!value || value.length <= 0) return 'must provide valid argument';
+          return undefined;
+        },
+      });
+
+      if (isCancel(cmdArgs)) {
+        cancel('Operation cancelled.');
+        process.exit(0);
+      }
+
+      extraArgs.push(...cmdArgs.split(' '));
+    }
+
+    if (typeof options?.cmd === 'string') {
+      extraArgs.push(...options.cmd.split(' '));
+    }
+
+    if (options?.cmd === undefined && config.randomPort) {
       const port = Math.floor(Math.random() * 60905) + 4096;
       extraArgs.push('--port', String(port));
     }
 
-    logger.info('starting profile:', highlighter.profile(profileName));
+    note([highlighter.green('opencode'), ...extraArgs].join(' '), `starting ${highlighter.profile(selectedProfile.name)} profile with..`);
+    successOutro();
 
     let proc: ReturnType<typeof Bun.spawn> | null = null;
     let preSpawnSignalExitCode: number | null = null;
@@ -79,14 +145,13 @@ export class RunCommandTemplate extends CommandTemplate {
 
       proc = Bun.spawn({
         cmd: ['opencode', ...extraArgs],
-        env: { ...process.env, OPENCODE_CONFIG_DIR: profilePath },
+        env: { ...process.env, OPENCODE_CONFIG_DIR: selectedProfile.path },
         stdin: 'inherit',
         stdout: 'inherit',
         stderr: 'inherit',
       });
 
       const exitCode = await proc.exited;
-      logger.info('closing profile:', highlighter.profile(profileName));
       process.exit(exitCode);
     } finally {
       process.off('SIGINT', sigintHandler);

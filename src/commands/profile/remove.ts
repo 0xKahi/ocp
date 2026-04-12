@@ -1,8 +1,10 @@
+import { cancel, isCancel, log, select, spinner } from '@clack/prompts';
 import type { CommandEx } from '../../schemas/command-ex';
 import { CommandTemplate } from '../../schemas/command-template';
+import { loadOcpConfig } from '../../utils/config-loader.util';
 import { highlighter } from '../../utils/highlighter';
-import { logger } from '../../utils/logger';
 import { ProfileLoader } from '../../utils/profile-loader';
+import { successOutro } from '../../utils/prompt.util';
 
 export class RemoveProfileCommandTemplate extends CommandTemplate {
   override readonly name = 'remove';
@@ -10,13 +12,59 @@ export class RemoveProfileCommandTemplate extends CommandTemplate {
   override readonly alias = 'rm';
 
   override setArguments(cmd: CommandEx): void {
-    cmd.argument('<name>', 'Profile name');
+    cmd.argument('[name]', 'Profile name');
   }
 
   override setOptions(_cmd: CommandEx): void {}
 
-  override async execute(name: string): Promise<void> {
-    await ProfileLoader.removeProfile(name);
-    logger.success('Profile', highlighter.profile(name), 'has been removed successfully.');
+  override async execute(name?: string): Promise<void> {
+    let profileName: string;
+
+    const spin = spinner();
+    spin.start('Loading profiles');
+    const config = await loadOcpConfig();
+    spin.stop('Finding profiles');
+
+    const profiles = ProfileLoader.parseProfilesFromConfig(config);
+
+    if (profiles.length === 0) {
+      cancel('No profiles found. Please add a profile first.');
+      process.exit(0);
+    }
+
+    if (name) {
+      log.info(`Attempting to remove profile "${highlighter.profile(name)}"`);
+      profileName = name;
+    } else {
+      const selectedName = await select({
+        message: 'Select a profile to remove',
+        options: profiles.map(p => {
+          return {
+            value: p.name,
+          };
+        }),
+      });
+
+      if (isCancel(selectedName)) {
+        cancel('Operation cancelled.');
+        process.exit(0);
+      }
+
+      profileName = selectedName;
+    }
+
+    if (!profileName) {
+      cancel('Profile name is required.');
+      process.exit(0);
+    }
+
+    if (!config.profiles[profileName]) {
+      cancel(`Profile "${highlighter.profile(profileName)}" does not exist.`);
+      process.exit(0);
+    }
+
+    log.info(`Removing profile: ${highlighter.profile(profileName)}`);
+    await ProfileLoader.removeProfile(profileName);
+    successOutro();
   }
 }
