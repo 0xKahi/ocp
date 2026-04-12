@@ -1,10 +1,9 @@
 #!/usr/bin/env bun
-const { version } = await import('../package.json');
-
 import { InitCommandTemplate } from './commands/init';
 import { ProfileCommandTemplate } from './commands/profile/index';
 import { RunCommandTemplate } from './commands/run';
-import { UpdateCommandTemplate } from './commands/update';
+import { UpgradeCommandTemplate } from './commands/upgrade';
+import { CURRENT_VERSION } from './meta';
 import { CommandEx } from './schemas/command-ex';
 import { CommandTemplate } from './schemas/command-template';
 import { logger } from './utils/logger';
@@ -15,11 +14,11 @@ class MainCommandTemplate extends CommandTemplate {
 
   override globalSettings(cmd: CommandEx): void {
     super.globalSettings(cmd);
-    cmd.version(version);
+    cmd.version(CURRENT_VERSION);
   }
 
   override subCommands(): CommandTemplate[] {
-    return [new InitCommandTemplate(), new ProfileCommandTemplate(), new RunCommandTemplate(), new UpdateCommandTemplate()];
+    return [new InitCommandTemplate(), new ProfileCommandTemplate(), new RunCommandTemplate(), new UpgradeCommandTemplate()];
   }
 }
 
