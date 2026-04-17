@@ -1,5 +1,11 @@
 # opencode-profiles
 
+## 1.4.1
+
+### Patch Changes
+
+- f98b877: added json schema
+
 ## 1.4.0
 
 ### Minor Changes
