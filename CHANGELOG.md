@@ -1,5 +1,11 @@
 # opencode-profiles
 
+## 1.4.2
+
+### Patch Changes
+
+- 82f38c2: refactor to strategy template
+
 ## 1.4.1
 
 ### Patch Changes
