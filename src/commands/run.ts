@@ -1,6 +1,5 @@
 import { box, cancel, isCancel, note, select, spinner, text } from '@clack/prompts';
-import type { CommandEx } from '../schemas/command-ex';
-import { CommandTemplate } from '../schemas/command-template';
+import type { CommandStrategy } from '../schemas/command-strategy';
 import { loadOcpConfig } from '../utils/config-loader.util';
 import { highlighter } from '../utils/highlighter';
 import { type Profile, ProfileLoader } from '../utils/profile-loader';
@@ -10,20 +9,16 @@ type RunCommandOptions = {
   cmd?: string | boolean;
 };
 
-export class RunCommandTemplate extends CommandTemplate {
-  override readonly name = 'run';
-  override readonly description = 'Run opencode with a profile';
-  override readonly alias = 'r';
+export class RunCommand implements CommandStrategy {
+  readonly config = {
+    name: 'run',
+    description: 'Run opencode with a profile',
+    alias: 'r',
+    args: [{ name: '[profile]', description: 'optional Profile name' }],
+    options: [{ flag: '--cmd [VALUE]', description: 'Run forwarded arguments as an opencode subcommand' }],
+  };
 
-  override setArguments(cmd: CommandEx): void {
-    cmd.argument('[profile]', 'optional Profile name');
-  }
-
-  override setOptions(cmd: CommandEx): void {
-    cmd.option('--cmd [VALUE]', 'Run forwarded arguments as an opencode subcommand');
-  }
-
-  override async execute(profileName: string | undefined, options: RunCommandOptions): Promise<void> {
+  async execute(profileName: string | undefined, options: RunCommandOptions): Promise<void> {
     const spin = spinner();
 
     spin.start('Loading profiles');

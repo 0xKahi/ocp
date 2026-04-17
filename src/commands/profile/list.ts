@@ -1,19 +1,18 @@
 import { spinner } from '@clack/prompts';
-import type { CommandEx } from '../../schemas/command-ex';
-import { CommandTemplate } from '../../schemas/command-template';
+import type { CommandStrategy } from '../../schemas/command-strategy';
 import { loadOcpConfig } from '../../utils/config-loader.util';
 import { highlighter } from '../../utils/highlighter';
 import { ProfileLoader } from '../../utils/profile-loader';
 import { successOutro } from '../../utils/prompt.util';
 
-export class ListProfileCommandTemplate extends CommandTemplate {
-  override readonly name = 'list';
-  override readonly description = 'List all profiles';
-  override readonly alias = 'ls';
+export class ListProfileCommand implements CommandStrategy {
+  readonly config = {
+    name: 'list',
+    description: 'List all profiles',
+    alias: 'ls',
+  };
 
-  override setOptions(_cmd: CommandEx): void {}
-
-  override async execute(): Promise<void> {
+  async execute(): Promise<void> {
     const spin = spinner();
 
     spin.start('Loading profiles');
