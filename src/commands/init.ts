@@ -1,15 +1,17 @@
 import { box, cancel, log, note, spinner } from '@clack/prompts';
-import { CommandTemplate } from '../schemas/command-template';
+import type { CommandStrategy } from '../schemas/command-strategy';
 import type { OcpConfig } from '../utils/config-loader.util';
 import { highlighter } from '../utils/highlighter';
 import { PathUtil } from '../utils/path.util';
 import { successOutro } from '../utils/prompt.util';
 
-export class InitCommandTemplate extends CommandTemplate {
-  override readonly name = 'init';
-  override readonly description = 'Initialize OCP';
+export class InitCommand implements CommandStrategy {
+  readonly config = {
+    name: 'init',
+    description: 'Initialize OCP',
+  };
 
-  override async execute(): Promise<void> {
+  async execute(): Promise<void> {
     const spin = spinner();
     spin.start('Finding opencode global directory');
     const opencodeDir = PathUtil.findFile(PathUtil.globalOpencodeConfig);

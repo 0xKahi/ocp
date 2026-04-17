@@ -1,7 +1,6 @@
 import { cancel, log, spinner } from '@clack/prompts';
 import { CURRENT_VERSION } from '../meta';
-import type { CommandEx } from '../schemas/command-ex';
-import { CommandTemplate } from '../schemas/command-template';
+import type { CommandStrategy } from '../schemas/command-strategy';
 import { highlighter } from '../utils/highlighter';
 import { successOutro } from '../utils/prompt.util';
 
@@ -15,17 +14,14 @@ function execText(cmd: string[]) {
 
 type PackageManager = 'bun' | 'npm' | 'pnpm' | 'yarn';
 
-export class UpgradeCommandTemplate extends CommandTemplate {
-  override readonly name = 'upgrade';
-  override readonly description = 'upgrade the OCP CLI to the latest version';
+export class UpgradeCommand implements CommandStrategy {
+  readonly config = {
+    name: 'upgrade',
+    description: 'upgrade the OCP CLI to the latest version',
+    args: [{ name: '[version]', description: 'Version to upgrade to (default: latest)' }],
+  };
 
-  override setArguments(cmd: CommandEx): void {
-    cmd.argument('[version]', 'Version to upgrade to (default: latest)');
-  }
-
-  override setOptions(_cmd: CommandEx): void {}
-
-  override async execute(version?: string): Promise<void> {
+  async execute(version?: string): Promise<void> {
     log.step('Checking installation method');
     const method = this.installMethod();
     const currentVersion = CURRENT_VERSION;

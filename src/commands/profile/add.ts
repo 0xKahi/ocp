@@ -1,7 +1,6 @@
 import path from 'node:path';
 import { cancel, isCancel, log, text } from '@clack/prompts';
-import type { CommandEx } from '../../schemas/command-ex';
-import { CommandTemplate } from '../../schemas/command-template';
+import type { CommandStrategy } from '../../schemas/command-strategy';
 import { highlighter } from '../../utils/highlighter';
 import { ProfileLoader } from '../../utils/profile-loader';
 import { pointFormNote, successOutro } from '../../utils/prompt.util';
@@ -11,19 +10,18 @@ type AddProfileOptions = {
   path?: string;
 };
 
-export class AddProfileCommandTemplate extends CommandTemplate {
-  override readonly name = 'add';
-  override readonly description = 'Add a new profile';
+export class AddProfileCommand implements CommandStrategy {
+  readonly config = {
+    name: 'add',
+    description: 'Add a new profile',
+    args: [{ name: '[name]', description: 'Profile name' }],
+    options: [
+      { flag: '--cwd', description: 'Use current working directory as profile path' },
+      { flag: '--path <path>', description: 'Path to the profile directory' },
+    ],
+  };
 
-  override setArguments(cmd: CommandEx): void {
-    cmd.argument('[name]', 'Profile name');
-  }
-
-  override setOptions(cmd: CommandEx): void {
-    cmd.option('--cwd', 'Use current working directory as profile path').option('--path <path>', 'Path to the profile directory');
-  }
-
-  override async execute(name: string | undefined, options: AddProfileOptions): Promise<void> {
+  async execute(name: string | undefined, options: AddProfileOptions): Promise<void> {
     let profileName: string;
 
     if (name) {

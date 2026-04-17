@@ -1,23 +1,19 @@
 import { cancel, isCancel, log, select, spinner } from '@clack/prompts';
-import type { CommandEx } from '../../schemas/command-ex';
-import { CommandTemplate } from '../../schemas/command-template';
+import type { CommandStrategy } from '../../schemas/command-strategy';
 import { loadOcpConfig } from '../../utils/config-loader.util';
 import { highlighter } from '../../utils/highlighter';
 import { ProfileLoader } from '../../utils/profile-loader';
 import { successOutro } from '../../utils/prompt.util';
 
-export class RemoveProfileCommandTemplate extends CommandTemplate {
-  override readonly name = 'remove';
-  override readonly description = 'Remove a profile';
-  override readonly alias = 'rm';
+export class RemoveProfileCommand implements CommandStrategy {
+  readonly config = {
+    name: 'remove',
+    description: 'Remove a profile',
+    alias: 'rm',
+    args: [{ name: '[name]', description: 'Profile name' }],
+  };
 
-  override setArguments(cmd: CommandEx): void {
-    cmd.argument('[name]', 'Profile name');
-  }
-
-  override setOptions(_cmd: CommandEx): void {}
-
-  override async execute(name?: string): Promise<void> {
+  async execute(name?: string): Promise<void> {
     let profileName: string;
 
     const spin = spinner();

@@ -1,5 +1,6 @@
 import { Command } from 'commander';
-import type { CommandTemplate } from './command-template';
+import type { CommandStrategy } from './command-strategy';
+import { commandLoader } from './command-strategy';
 
 export class CommandEx extends Command {
   private static assertNoDuplicateEntry(existingEntries: Set<string>, entry: string, parentName: string): void {
@@ -16,47 +17,47 @@ export class CommandEx extends Command {
     }
   }
 
-  private static collectEntries(template: CommandTemplate): string[] {
-    const entries = [template.name];
-    if (template.alias) {
-      entries.push(template.alias);
+  private static collectEntries(strategy: CommandStrategy): string[] {
+    const entries = [strategy.config.name];
+    if (strategy.config.alias) {
+      entries.push(strategy.config.alias);
     }
     return entries;
   }
 
-  use(template: CommandTemplate): this {
+  use(strategy: CommandStrategy): this {
     const currentName = this.name();
-    if (currentName && currentName !== template.name) {
-      throw new Error(`Cannot apply template "${template.name}" to command "${currentName}".`);
+    if (currentName && currentName !== strategy.config.name) {
+      throw new Error(`Cannot apply strategy "${strategy.config.name}" to command "${currentName}".`);
     }
 
     if (!currentName) {
-      this.name(template.name);
+      this.name(strategy.config.name);
     }
 
     const existingEntries = this.commands.flatMap(command => [command.name(), ...command.aliases()]);
     const existingEntrySet = new Set(existingEntries);
     const parentName = this.name() || 'root';
 
-    for (const entry of CommandEx.collectEntries(template)) {
+    for (const entry of CommandEx.collectEntries(strategy)) {
       CommandEx.assertNoDuplicateEntry(existingEntrySet, entry, parentName);
     }
 
-    template.load(this);
+    commandLoader.load(strategy, this);
     return this;
   }
 
-  register(template: CommandTemplate): this {
+  register(strategy: CommandStrategy): this {
     const existingEntries = this.commands.flatMap(command => [command.name(), ...command.aliases()]);
     const existingEntrySet = new Set(existingEntries);
     const parentName = this.name() || 'root';
 
-    for (const entry of CommandEx.collectEntries(template)) {
+    for (const entry of CommandEx.collectEntries(strategy)) {
       CommandEx.assertNoDuplicateEntry(existingEntrySet, entry, parentName);
     }
 
-    const command = new CommandEx(template.name);
-    template.load(command);
+    const command = new CommandEx(strategy.config.name);
+    commandLoader.load(strategy, command);
     CommandEx.assertUniqueAlias(command);
 
     const newEntries = [command.name(), ...command.aliases()];
