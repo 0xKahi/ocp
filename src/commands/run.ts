@@ -114,7 +114,7 @@ export class RunCommandTemplate extends CommandTemplate {
       extraArgs.push(...options.cmd.split(' '));
     }
 
-    if (options?.cmd === undefined && config.randomPort) {
+    if (options?.cmd === undefined && config.startup?.randomPort) {
       const port = Math.floor(Math.random() * 60905) + 4096;
       extraArgs.push('--port', String(port));
     }

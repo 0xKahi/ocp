@@ -1,5 +1,6 @@
 import { box, cancel, log, note, spinner } from '@clack/prompts';
 import { CommandTemplate } from '../schemas/command-template';
+import type { OcpConfig } from '../utils/config-loader.util';
 import { highlighter } from '../utils/highlighter';
 import { PathUtil } from '../utils/path.util';
 import { successOutro } from '../utils/prompt.util';
@@ -29,9 +30,12 @@ export class InitCommandTemplate extends CommandTemplate {
       process.exit(1);
     }
 
-    const defaultConfig = {
+    const defaultConfig: OcpConfig = {
+      $schema: 'https://raw.githubusercontent.com/0xKahi/ocp/main/assets/ocp.schema.json',
+      startup: {
+        randomPort: false,
+      },
       profiles: {},
-      randomPort: false,
     };
 
     const spin2 = spinner();
