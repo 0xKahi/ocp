@@ -7,6 +7,7 @@ import { successOutro } from '../utils/prompt.util';
 
 type RunCommandOptions = {
   cmd?: string | boolean;
+  raw?: boolean;
 };
 
 export class RunCommand implements CommandStrategy {
@@ -15,7 +16,10 @@ export class RunCommand implements CommandStrategy {
     description: 'Run opencode with a profile',
     alias: 'r',
     args: [{ name: '[profile]', description: 'optional Profile name' }],
-    options: [{ flag: '--cmd [VALUE]', description: 'Run forwarded arguments as an opencode subcommand' }],
+    options: [
+      { flag: '--cmd [VALUE]', description: 'Run forwarded arguments as an opencode subcommand (or any command when combined with --no-oc)' },
+      { flag: '--raw', description: 'Use with --cmd to run the command without opencode (OPENCODE_CONFIG_DIR is still set in env)' },
+    ],
   };
 
   async execute(profileName: string | undefined, options: RunCommandOptions): Promise<void> {
@@ -86,11 +90,36 @@ export class RunCommand implements CommandStrategy {
       process.exit(0);
     }
 
+    const raw = options?.raw === true;
+    const hasCmd = options?.cmd !== undefined;
+    let runOpencode = !raw;
+
+    if (raw && !hasCmd) {
+      cancel('--raw requires --cmd');
+      process.exit(1);
+    }
+
     const extraArgs: string[] = [];
     if (options?.cmd === true) {
+      const useOpencode = await select<boolean>({
+        message: 'Run with opencode?',
+        options: [
+          { value: true, label: 'Yes' },
+          { value: false, label: 'No' },
+        ],
+        initialValue: !raw,
+      });
+
+      if (isCancel(useOpencode)) {
+        cancel('Operation cancelled.');
+        process.exit(0);
+      }
+
       const cmdArgs = await text({
-        message: `Enter the command to be passed to ${highlighter.green('opencode')} ${highlighter.command('<command>')}`,
-        placeholder: 'e.g. --port 3000',
+        message: useOpencode
+          ? `Enter the command to be passed to ${highlighter.green('opencode')} ${highlighter.command('<command>')}`
+          : `Enter the command to run with ${highlighter.command('OPENCODE_CONFIG_DIR')} set in ${highlighter.profile(selectedProfile.name)} profile directory`,
+        placeholder: useOpencode ? 'e.g. --port 3000' : 'e.g. bunx oh-my-opencode@latest install',
         validate: value => {
           if (!value || value.length <= 0) return 'must provide valid argument';
           return undefined;
@@ -101,6 +130,8 @@ export class RunCommand implements CommandStrategy {
         cancel('Operation cancelled.');
         process.exit(0);
       }
+
+      runOpencode = useOpencode;
 
       extraArgs.push(...cmdArgs.split(' '));
     }
@@ -114,7 +145,27 @@ export class RunCommand implements CommandStrategy {
       extraArgs.push('--port', String(port));
     }
 
-    note([highlighter.green('opencode'), ...extraArgs].join(' '), `starting ${highlighter.profile(selectedProfile.name)} profile with..`);
+    const runCommand: string[] = [];
+    if (runOpencode) {
+      runCommand.push('opencode', ...extraArgs);
+      note(
+        [highlighter.green(runCommand[0]!), ...runCommand.slice(1)].join(' '),
+        `starting ${highlighter.profile(selectedProfile.name)} profile with..`,
+      );
+    } else {
+      if (extraArgs.length === 0) {
+        cancel('Empty command.');
+        process.exit(1);
+      }
+
+      const shell = process.env.SHELL || '/bin/sh';
+      runCommand.push(shell, '-c', extraArgs.join(' '));
+      note(
+        [highlighter.green(runCommand[0]!), ...runCommand.slice(1)].join(' '),
+        `running cmd in ${highlighter.profile(selectedProfile.name)} profile directory`,
+      );
+    }
+
     successOutro();
 
     let proc: ReturnType<typeof Bun.spawn> | null = null;
@@ -139,7 +190,7 @@ export class RunCommand implements CommandStrategy {
       }
 
       proc = Bun.spawn({
-        cmd: ['opencode', ...extraArgs],
+        cmd: runCommand,
         env: { ...process.env, OPENCODE_CONFIG_DIR: selectedProfile.path },
         stdin: 'inherit',
         stdout: 'inherit',

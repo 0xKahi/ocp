@@ -38,7 +38,8 @@
     "biome": "biome check ./src",
     "lint": "bun biome",
     "lint:fix": "bun biome --write",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "check": "bun run lint:fix && bun run type-check"
   },
   "dependencies": {
     "@clack/prompts": "^1.2.0",
