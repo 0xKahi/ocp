@@ -166,7 +166,16 @@ export class RunCommand implements CommandStrategy {
       );
     }
 
-    successOutro();
+    await this.runCommand({ profile: selectedProfile, command: runCommand, runOpencode });
+  }
+
+  private async runCommand({ profile, command, runOpencode }: { profile: Profile; command: string[]; runOpencode: boolean }): Promise<void> {
+    const spin = spinner();
+    if (runOpencode) {
+      successOutro();
+    } else {
+      spin.start('Running command');
+    }
 
     let proc: ReturnType<typeof Bun.spawn> | null = null;
     let preSpawnSignalExitCode: number | null = null;
@@ -190,14 +199,18 @@ export class RunCommand implements CommandStrategy {
       }
 
       proc = Bun.spawn({
-        cmd: runCommand,
-        env: { ...process.env, OPENCODE_CONFIG_DIR: selectedProfile.path },
+        cmd: command,
+        env: { ...process.env, OPENCODE_CONFIG_DIR: profile.path },
         stdin: 'inherit',
         stdout: 'inherit',
         stderr: 'inherit',
       });
 
       const exitCode = await proc.exited;
+      if (!runOpencode) {
+        spin.clear();
+      }
+
       process.exit(exitCode);
     } finally {
       process.off('SIGINT', sigintHandler);
