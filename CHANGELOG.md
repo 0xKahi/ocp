@@ -1,5 +1,11 @@
 # opencode-profiles
 
+## 1.5.0
+
+### Minor Changes
+
+- bed67db: added --raw to run command
+
 ## 1.4.2
 
 ### Patch Changes
