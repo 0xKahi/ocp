@@ -1,5 +1,11 @@
 # opencode-profiles
 
+## 1.5.1
+
+### Patch Changes
+
+- 5aad4f0: added spinning loader to raw run cmds
+
 ## 1.5.0
 
 ### Minor Changes
