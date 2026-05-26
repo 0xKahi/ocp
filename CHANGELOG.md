@@ -1,5 +1,11 @@
 # opencode-profiles
 
+## 1.5.2
+
+### Patch Changes
+
+- c1ba08d: run ocp command with --no-env-file
+
 ## 1.5.1
 
 ### Patch Changes
