@@ -1,4 +1,4 @@
-#!/usr/bin/env bun
+#!/usr/bin/env -S bun --no-env-file
 import { InitCommand } from './commands/init';
 import { ProfileCommand } from './commands/profile/index';
 import { RunCommand } from './commands/run';
