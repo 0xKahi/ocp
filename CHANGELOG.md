@@ -1,5 +1,11 @@
 # opencode-profiles
 
+## 1.5.3
+
+### Patch Changes
+
+- 6f06aa5: ci: publish via npm trusted publishing (OIDC) instead of NPM_TOKEN
+
 ## 1.5.2
 
 ### Patch Changes
