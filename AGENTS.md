@@ -37,7 +37,7 @@ bun run type-check   # Run tsc --noEmit (separate from build)
 **Release (Changesets):**
 ```bash
 bun run changeset    # Create a changeset for versioning
-bun run version      # Bump versions via changeset
+bun run version-packages  # Bump versions via changeset
 bun run release      # Publish to npm via changeset
 ```
 
@@ -215,11 +215,11 @@ src/
 ## CI / Release Workflow
 
 **CI (`.github/workflows/ci.yml`):**
-- Runs on push/PR to `main`
-- Steps: `bun install` → `bun run type-check` → `bun run lint`
+- Runs on PRs to `main` (release.yml covers pushes to `main`)
+- Steps: `bun install --frozen-lockfile` → `bun run type-check` → `bun run lint`
 
 **Release (`.github/workflows/release.yml`):**
 - Triggers on push to `main`
-- Uses `changesets/action@v1` to create PR or publish
-- Requires `NPM_TOKEN` and `GITHUB_TOKEN`
-- Runs `bun run build` before publishing
+- Uses `changesets/action@v2.1.2` (Changesets v3) to create PR or publish
+- Publishes via npm trusted publishing (OIDC, `id-token: write`) — no `NPM_TOKEN` secret
+- Runs `buildSchema`, `build`, `type-check`, `lint` before publishing
